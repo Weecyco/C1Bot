@@ -1,119 +1,132 @@
 import math
+from C1Properties import C1Properties, Target
+from VecUtilities import Vec2, Vec3, cross2, dot2, cross3, dot3
+from pathGuide import *
 
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
+from rlbot.utils.game_state_util import Rotator
 
 
-class PythonExample(BaseAgent):
+C1DB = C1Properties()
+
+
+class C1(BaseAgent):
 
     def initialize_agent(self):
         #This runs once before the bot starts up
         self.controller_state = SimpleControllerState()
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
-        ball_location = Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y,
-                                packet.game_ball.physics.location.z)
-        ball_velocity = Vector3(packet.game_ball.physics.velocity.x, packet.game_ball.physics.velocity.y,
-                                packet.game_ball.physics.velocity.z)
-        print(ball_location.x)
 
-        print(self.index)
-        print(len(packet.game_cars))
-        my_car = packet.game_cars[self.index]
+        if C1DB.ticks == 0:
+            while len(C1DB.carLoc) != len(packet.game_cars):
+                C1DB.carLoc.append(Vec3(0, 0, 0))
+                C1DB.carVel.append(Vec3(0, 0, 0))
+                C1DB.carRot.append(Rotator(0, 0, 0))
+                C1DB.carAVel.append(Vec3(0, 0, 0))
+                C1DB.carPrevVel.append(Vec3(0, 0, 0))
+
+        C1DB.ballLoc.covtVecFrom(packet.game_ball.physics.location)
+        C1DB.ballVel.covtVecFrom(packet.game_ball.physics.velocity)
+        C1DB.ballRot = packet.game_ball.physics.rotation
+        C1DB.ballAVel.covtVecFrom(packet.game_ball.physics.angular_velocity)
+
+        C1DB.index = self.index
+
+        for i in range(0, len(packet.game_cars)):
+            C1DB.carLoc[i].covtVecFrom(packet.game_cars[i].physics.location)
+            C1DB.carVel[i].covtVecFrom(packet.game_cars[i].physics.velocity)
+            C1DB.carRot[i] = packet.game_cars[i].physics.rotation
+            C1DB.carAVel[i].covtVecFrom(packet.game_cars[i].physics.angular_velocity)
+
+        C1DB.CBVec = C1DB.ballLoc - C1DB.carLoc[C1DB.index]
 
         # Setting car kinematic arrays
-        car_location = [Vector3(packet.game_cars[0].physics.location.x, packet.game_cars[0].physics.location.y,
-                                packet.game_cars[0].physics.location.z)]
-        car_velocity = [Vector3(packet.game_cars[0].physics.velocity.x, packet.game_cars[0].physics.velocity.y,
-                                packet.game_cars[0].physics.velocity.z)]
-        car_direction = [get_car_facing_vector(packet.game_cars[0])]
-        for i in range(1, packet.num_cars):
-            car_location.append(Vector3(packet.game_cars[i].physics.location.x, packet.game_cars[i].physics.location.y,
-                                        packet.game_cars[i].physics.location.z))
-            car_velocity.append(Vector3(packet.game_cars[i].physics.velocity.x, packet.game_cars[i].physics.velocity.y,
-                                        packet.game_cars[i].physics.velocity.z))
-            car_direction.append(get_car_facing_vector(packet.game_cars[i]))
-        print(car_location[0].x)
+        # car_location = [Vec3(packet.game_cars[0].physics.location.x,
+        #                         packet.game_cars[0].physics.location.y,
+        #                         packet.game_cars[0].physics.location.z)]
+        # car_velocity = [Vec3(packet.game_cars[0].physics.velocity.x,
+        #                         packet.game_cars[0].physics.velocity.y,
+        #                         packet.game_cars[0].physics.velocity.z)]
+        # car_direction = [get_car_facing_vector(packet.game_cars[0])]
+        # for i in range(1, packet.num_cars):
+        #     car_location.append(Vec3(packet.game_cars[i].physics.location.x, packet.game_cars[i].physics.location.y,
+        #                                 packet.game_cars[i].physics.location.z))
+        #     car_velocity.append(Vec3(packet.game_cars[i].physics.velocity.x, packet.game_cars[i].physics.velocity.y,
+        #                                 packet.game_cars[i].physics.velocity.z))
+        #     car_direction.append(get_car_facing_vector(packet.game_cars[i]))
+
+        # C1DB.CBvec = ball_location - car_location[self.index]
+
+        if C1DB.ticks % 60 == 0:
+            print("ball location: ")
+            print(C1DB.ballLoc.x)
+            print("ball speed: ")
+            print(C1DB.ballVel.mag3())
+
+            print("self index: ")
+            print(self.index)
+
+            print("number of players: ")
+            print(len(packet.game_cars))
+
+            print("car 1's pos: ")
+            print(C1DB.carLoc[1].x)
+            print(C1DB.carLoc[1].y)
+            print(C1DB.carLoc[1].z)
+            print("end of car 0's xpos")
+
+            print("car 1's Vel")
+            print(C1DB.carVel[1].x/60)
+            print(C1DB.carVel[1].y/60)
+            print(C1DB.carVel[1].z/60)
+            print("car 1's Previous Vel")
+            print(C1DB.carPrevVel[1].x/60)
+            print(C1DB.carPrevVel[1].y/60)
+            print(C1DB.carPrevVel[1].z/60)
 
         # AI Start
         ball_prediction = self.get_ball_prediction_struct()
 
         if ball_prediction is not None:
-            for i in range(0, ball_prediction.num_slices):
+            for i in range(ball_prediction.num_slices - 5, ball_prediction.num_slices):
                 prediction_slice = ball_prediction.slices[i]
                 location = prediction_slice.physics.location
-                # self.logger.info("At time {}, the ball will be at ({}, {}, {})"
-                #                  .format(prediction_slice.game_seconds, location.x, location.y, location.z))
+                if C1DB.ticks % 600 == 0:
+                    self.logger.info("At time {}, the ball will be at ({}, {}, {})"
+                                     .format(prediction_slice.game_seconds, location.x, location.y, location.z))
 
-        cb_delta_d = ball_location - car_location[self.index]
-        cb_delta_v = ball_velocity - car_velocity[self.index]
-        if cb_delta_d.mag2() > 10000.0:
-            throttle = 1.0
+
+        # cb_delta_v = ball_velocity - car_velocity[self.index]
+        if C1DB.CBVec.mag2() > 500.0:
+            self.controller_state.throttle = 1.0
         else:
-            throttle = math.fabs(cb_delta_d.mag2() / 10000.0)
+            self.controller_state.throttle = math.fabs(C1DB.CBVec.mag2() / 1000.0)
 
-        steer_correction_radians = car_direction[self.index].correction_to(cb_delta_d)
-        if steer_correction_radians > 0:
-            # Positive radians in the unit circle is a turn to the left.
-            turn = -1.0  # Negative value for a turn to the left.
-            action_display = "turn left"
-        else:
-            turn = 1.0
-            action_display = "turn right"
 
-        self.controller_state.throttle = throttle
-        self.controller_state.steer = turn
+        pathFinder(self.controller_state, packet, C1DB, Target(C1DB.ballLoc, C1DB.ballVel, 0))
 
-        draw_debug(self.renderer, my_car, packet.game_ball, action_display)
+        action_display = "temp"
+
+        # self.controller_state.throttle = throttle
+        # self.controller_state.steer = turn
+
+        draw_debug(self.renderer, packet.game_cars[self.index], packet.game_ball, action_display)
+
+        # updates time
+        C1DB.ticks += 1
+        if C1DB.ticks == 1000000:
+            C1DB.ticks = 0
+
+        # updates data base
+        for i in range(0, len(C1DB.carVel)):
+            C1DB.carPrevVel[i] = C1DB.carVel[i]
+        C1DB.ballPrevVel = C1DB.ballVel
+        C1DB.prevInput = self.controller_state
 
         return self.controller_state
 
-
-class Vector2:
-    def __init__(self, x=0, y=0):
-        self.x = float(x)
-        self.y = float(y)
-
-    def __add__(self, val):
-        return Vector2(self.x + val.x, self.y + val.y)
-
-    def __sub__(self, val):
-        return Vector2(self.x - val.x, self.y - val.y)
-
-    def correction_to(self, ideal):
-        # The in-game axes are left handed, so use -x
-        current_in_radians = math.atan2(self.y, -self.x)
-        ideal_in_radians = math.atan2(ideal.y, -ideal.x)
-
-        correction = ideal_in_radians - current_in_radians
-
-        # Make sure we go the 'short way'
-        if abs(correction) > math.pi:
-            if correction < 0:
-                correction += 2 * math.pi
-            else:
-                correction -= 2 * math.pi
-
-        return correction
-
-
-class Vector3(Vector2):
-    def __init__(self, x=0, y=0, z=0):
-        Vector2.__init__(self, x, y)
-        print(self.x)
-        self.z = float(z)
-
-    def __add__(self, val):
-        return Vector3(self.x + val.x, self.y + val.y, self.z + val.z)
-
-    def __sub__(self, val):
-        return Vector3(self.x - val.x, self.y - val.y, self.z - val.z)
-
-    def mag3(self):
-        return math.sqrt(self.x**2 + self.y**2 + self.z**2)
-
-    def mag2(self):
-        return math.sqrt(self.x**2 + self.y**2)
 
 def get_car_facing_vector(car):
     pitch = float(car.physics.rotation.pitch)
@@ -122,7 +135,8 @@ def get_car_facing_vector(car):
     facing_x = math.cos(pitch) * math.cos(yaw)
     facing_y = math.cos(pitch) * math.sin(yaw)
 
-    return Vector2(facing_x, facing_y)
+    return Vec2(facing_x, facing_y)
+
 
 def draw_debug(renderer, car, ball, action_display):
     renderer.begin_rendering()
@@ -131,20 +145,3 @@ def draw_debug(renderer, car, ball, action_display):
     # print the action that the bot is taking
     renderer.draw_string_3d(car.physics.location, 2, 2, action_display, renderer.white())
     renderer.end_rendering()
-
-
-def cross2(vec2d1, vec2d2):
-    return vec2d1.x * vec2d2.y - vec2d2.x * vec2d1.y
-
-
-def dot2(vec2d1, vec2d2):
-    return vec2d1.x * vec2d2.x + vec2d1.y * vec2d2.y
-
-
-def cross3(vec3d1, vec3d2):
-    return Vector3(vec3d1.y * vec3d2.z - vec3d1.z * vec3d2.y, vec3d1.z * vec3d2.x - vec2d1.x * vec2d2.z,
-                   vec3d1.x * vec3d2.y - vec2d2.x * vec2d1.y)
-
-
-def dot3(vec3d1, vec3d2):
-    return vec3d1.x * vec3d2.x + vec3d1.y * vec3d2.y + vec3d1.z * vec3d2.z
