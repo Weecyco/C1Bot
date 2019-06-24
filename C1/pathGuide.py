@@ -17,15 +17,15 @@ def pathFinder(controlState, packet, C1DB, targ):
         C1DB.carVel[C1DB.index].x = 0.0000001
     if C1DB.carPrevVel[C1DB.index].x == 0:
         C1DB.carPrevVel[C1DB.index].x = 0.0000001
-    phio = math.tan(dR.y/dR.x) - math.tan(C1DB.carVel[C1DB.index].y/C1DB.carVel[C1DB.index].x)
-    exp = 5
-    phi = phio * math.log(C1DB.carVel[C1DB.index].mag2()/60/ro, exp)
+    phio = math.atan(dR.y/dR.x) - math.atan(C1DB.carVel[C1DB.index].y/C1DB.carVel[C1DB.index].x)
+    exp = 0.3
+    phi = phio * (C1DB.carVel[C1DB.index].mag2()/60/ro)**exp
 
     phiOld = 0.0000001
     # controls steering based on angle required
     if C1DB.prevInput is not None and C1DB.prevInput.steer != 0:
 
-        phiOld = math.tan(C1DB.carVel[C1DB.index].y / C1DB.carVel[C1DB.index].x) - math.tan(C1DB.carPrevVel[C1DB.index].y / C1DB.carPrevVel[C1DB.index].x)
+        phiOld = math.atan(C1DB.carVel[C1DB.index].y / C1DB.carVel[C1DB.index].x) - math.atan(C1DB.carPrevVel[C1DB.index].y / C1DB.carPrevVel[C1DB.index].x)
         if phiOld == 0:
             phiOld = 0.0000001
         steerNew = C1DB.prevInput.steer / phiOld * phi
@@ -56,15 +56,19 @@ def pathFinder(controlState, packet, C1DB, targ):
     if C1DB.ticks%60 == 0:
         out = "Ro = " + str(ro) + " PHIo = " + str(phio)
         print(out)
-        out = "phi = " + str(phi) + " From r = " + str(C1DB.carVel[C1DB.index].mag2())
+        out = "phi = " + str(phi) + " From r = " + str(C1DB.carVel[C1DB.index].mag2()/60)
         print(out)
         if C1DB.prevInput is not None:
             out = "raw steer: " + str(C1DB.prevInput.steer / phiOld * phi)
             print(out)
+            out = "previous steer: " + str(C1DB.prevInput.steer)
+            print(out)
 
         out = "Phiold: " + str(phiOld)
         print(out)
-        out = "R angle: " + str(math.tan(dR.y/dR.x)) + " car angle: " + str(math.tan(C1DB.carVel[C1DB.index].y/C1DB.carVel[C1DB.index].x)) + " past car angle: " + str(math.tan(C1DB.carPrevVel[C1DB.index].y / C1DB.carPrevVel[C1DB.index].x))
+        out = "car vel x: " + str(C1DB.carVel[C1DB.index].x) + " y: " + str(C1DB.carVel[C1DB.index].y) + "prev car vel x: " + str(C1DB.carPrevVel[C1DB.index].x) + " y: " + str(C1DB.carPrevVel[C1DB.index].y)
+        print(out)
+        out = "R angle: " + str(math.atan(dR.y/dR.x)) + " car angle: " + str(math.atan(C1DB.carVel[C1DB.index].y/C1DB.carVel[C1DB.index].x)) + " past car angle: " + str(math.atan(C1DB.carPrevVel[C1DB.index].y / C1DB.carPrevVel[C1DB.index].x))
         print(out)
 
 

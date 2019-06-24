@@ -51,6 +51,9 @@ class Vec3(Vec2):
         self.y = origVec.y
         self.z = origVec.z
 
+    def __copy__(self):
+        return Vec3(self.x, self.y, self.z)
+
 
 def cross2(vec2d1, vec2d2):
     return vec2d1.x * vec2d2.y - vec2d2.x * vec2d1.y

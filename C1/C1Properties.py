@@ -17,6 +17,7 @@ class C1Properties:
         self.carRot = [Rotator(0, 0, 0)]
         self.carAVel = [Vec3(0, 0, 0)]
 
+        self.carPrevLoc = [Vec3(0, 0, 0)]
         self.carPrevVel = [Vec3(0.0000001, 0.0000001, 0.0000001)]
 
         self.ballLoc = Vec3(0, 0, 0)

@@ -1,4 +1,6 @@
 import math
+import copy
+
 from C1Properties import C1Properties, Target
 from VecUtilities import Vec2, Vec3, cross2, dot2, cross3, dot3
 from pathGuide import *
@@ -26,6 +28,7 @@ class C1(BaseAgent):
                 C1DB.carRot.append(Rotator(0, 0, 0))
                 C1DB.carAVel.append(Vec3(0, 0, 0))
                 C1DB.carPrevVel.append(Vec3(0, 0, 0))
+                C1DB.carPrevLoc.append(Vec3(0, 0, 0))
 
         C1DB.ballLoc.covtVecFrom(packet.game_ball.physics.location)
         C1DB.ballVel.covtVecFrom(packet.game_ball.physics.velocity)
@@ -85,6 +88,10 @@ class C1(BaseAgent):
             print(C1DB.carPrevVel[1].x/60)
             print(C1DB.carPrevVel[1].y/60)
             print(C1DB.carPrevVel[1].z/60)
+            print("car 1's Loc-Loc difference")
+            print(C1DB.carLoc[1].x - C1DB.carPrevLoc[1].x)
+            print(C1DB.carLoc[1].y - C1DB.carPrevLoc[1].y)
+            print(C1DB.carLoc[1].z - C1DB.carPrevLoc[1].z)
 
         # AI Start
         ball_prediction = self.get_ball_prediction_struct()
@@ -121,10 +128,17 @@ class C1(BaseAgent):
 
         # updates data base
         for i in range(0, len(C1DB.carVel)):
-            C1DB.carPrevVel[i] = C1DB.carVel[i]
-        C1DB.ballPrevVel = C1DB.ballVel
-        C1DB.prevInput = self.controller_state
-
+            C1DB.carPrevVel[i] = copy.copy(C1DB.carVel[i])
+            C1DB.carPrevLoc[i] = copy.copy(C1DB.carLoc[i])
+        C1DB.ballPrevVel = copy.copy(C1DB.ballVel)
+        C1DB.prevInput = SimpleControllerState(self.controller_state.steer,
+                                               self.controller_state.throttle,
+                                               self.controller_state.pitch,
+                                               self.controller_state.yaw,
+                                               self.controller_state.roll,
+                                               self.controller_state.jump,
+                                               self.controller_state.boost,
+                                               self.controller_state.handbrake)
         return self.controller_state
 
 
