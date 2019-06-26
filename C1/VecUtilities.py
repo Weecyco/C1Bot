@@ -46,6 +46,19 @@ class Vec3(Vec2):
     def mag2(self):
         return math.sqrt(self.x**2 + self.y**2)
 
+    # -pi to pi
+    def angle_xy(self):
+        if self.x < 0:
+            if self.y > 0:
+                return math.atan(self.y / self.x) + math.pi
+            else:
+                return math.atan(self.y / self.x) - math.pi
+        elif self.x > 0:
+            return math.atan(self.y / self.x)
+        else:
+            return math.atan(self.y / 0.0000000001)  # arbitrary small value to avoid division by 0
+
+
     def covtVecFrom(self, origVec):
         self.x = origVec.x
         self.y = origVec.y

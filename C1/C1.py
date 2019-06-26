@@ -1,5 +1,6 @@
 import math
 import copy
+import time
 
 from C1Properties import C1Properties, Target
 from VecUtilities import Vec2, Vec3, cross2, dot2, cross3, dot3
@@ -9,7 +10,6 @@ from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlbot.utils.game_state_util import Rotator
 
-
 C1DB = C1Properties()
 
 
@@ -18,8 +18,16 @@ class C1(BaseAgent):
     def initialize_agent(self):
         #This runs once before the bot starts up
         self.controller_state = SimpleControllerState()
+        for i in range(0, C1DB.memoryTicks):
+            C1DB.myCarPrevLocs.append(Vec3(0, 0, 0))
+            C1DB.myCarPrevVels.append(Vec3(0, 0, 0))
+            C1DB.myCarPrevRots.append(Rotator(0, 0, 0))
+            C1DB.myCarPrevAVels.append(Vec3(0, 0, 0))
+            C1DB.prevPath.append(PathData(0.0000001, 0.0000001, 0.0000001))
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
+
+        #Setting up data...
 
         if C1DB.ticks == 0:
             while len(C1DB.carLoc) != len(packet.game_cars):
@@ -29,7 +37,11 @@ class C1(BaseAgent):
                 C1DB.carAVel.append(Vec3(0, 0, 0))
                 C1DB.carPrevVel.append(Vec3(0, 0, 0))
                 C1DB.carPrevLoc.append(Vec3(0, 0, 0))
-
+        else:
+            C1DB.deltaTime = time.perf_counter() - C1DB.pastTime
+            if C1DB.deltaTime < 0:
+                C1DB.deltaTime += 1
+        C1DB.pastTime = time.perf_counter()
         C1DB.ballLoc.covtVecFrom(packet.game_ball.physics.location)
         C1DB.ballVel.covtVecFrom(packet.game_ball.physics.velocity)
         C1DB.ballRot = packet.game_ball.physics.rotation
@@ -44,6 +56,12 @@ class C1(BaseAgent):
             C1DB.carAVel[i].covtVecFrom(packet.game_cars[i].physics.angular_velocity)
 
         C1DB.CBVec = C1DB.ballLoc - C1DB.carLoc[C1DB.index]
+
+        #updating past values
+        C1DB.myCarPrevLocs[C1DB.ticks%C1DB.memoryTicks] = copy.copy(C1DB.carLoc[C1DB.index])
+        C1DB.myCarPrevVels[C1DB.ticks%C1DB.memoryTicks] = copy.copy(C1DB.carVel[C1DB.index])
+        C1DB.myCarPrevRots[C1DB.ticks%C1DB.memoryTicks] = Rotator(C1DB.carRot[C1DB.index].pitch, C1DB.carRot[C1DB.index].yaw, C1DB.carRot[C1DB.index].roll)
+        C1DB.myCarPrevAVels[C1DB.ticks%C1DB.memoryTicks] = copy.copy(C1DB.carAVel[C1DB.index])
 
         # Setting car kinematic arrays
         # car_location = [Vec3(packet.game_cars[0].physics.location.x,
@@ -62,7 +80,7 @@ class C1(BaseAgent):
 
         # C1DB.CBvec = ball_location - car_location[self.index]
 
-        if C1DB.ticks % 60 == 0:
+        if C1DB.debugOut and C1DB.ticks % 60 == 0:
             print("ball location: ")
             print(C1DB.ballLoc.x)
             print("ball speed: ")
@@ -92,6 +110,8 @@ class C1(BaseAgent):
             print(C1DB.carLoc[1].x - C1DB.carPrevLoc[1].x)
             print(C1DB.carLoc[1].y - C1DB.carPrevLoc[1].y)
             print(C1DB.carLoc[1].z - C1DB.carPrevLoc[1].z)
+            print("delta Time:")
+            print(C1DB.deltaTime)
 
         # AI Start
         ball_prediction = self.get_ball_prediction_struct()
@@ -100,16 +120,17 @@ class C1(BaseAgent):
             for i in range(ball_prediction.num_slices - 5, ball_prediction.num_slices):
                 prediction_slice = ball_prediction.slices[i]
                 location = prediction_slice.physics.location
-                if C1DB.ticks % 600 == 0:
+                if C1DB.debugOut and C1DB.ticks % 600 == 0:
                     self.logger.info("At time {}, the ball will be at ({}, {}, {})"
                                      .format(prediction_slice.game_seconds, location.x, location.y, location.z))
 
 
         # cb_delta_v = ball_velocity - car_velocity[self.index]
-        if C1DB.CBVec.mag2() > 500.0:
-            self.controller_state.throttle = 1.0
-        else:
-            self.controller_state.throttle = math.fabs(C1DB.CBVec.mag2() / 1000.0)
+        # if C1DB.CBVec.mag2() > 500.0:
+        #         #     self.controller_state.throttle = 1.0
+        #         # else:
+        #         #     self.controller_state.throttle = math.fabs(C1DB.CBVec.mag2() / 1000.0)
+
 
 
         pathFinder(self.controller_state, packet, C1DB, Target(C1DB.ballLoc, C1DB.ballVel, 0))
@@ -118,8 +139,11 @@ class C1(BaseAgent):
 
         # self.controller_state.throttle = throttle
         # self.controller_state.steer = turn
+        # if C1DB.ticks%5 == 0:
+        if C1DB.debugVisual:
+            drawPath(self.renderer, C1DB)
 
-        draw_debug(self.renderer, packet.game_cars[self.index], packet.game_ball, action_display)
+        # draw_debug(self.renderer, packet.game_cars[self.index], packet.game_ball, action_display)
 
         # updates time
         C1DB.ticks += 1
@@ -155,7 +179,26 @@ def get_car_facing_vector(car):
 def draw_debug(renderer, car, ball, action_display):
     renderer.begin_rendering()
     # draw a line from the car to the ball
-    renderer.draw_line_3d(car.physics.location, ball.physics.location, renderer.white())
+    # renderer.draw_line_3d(car.physics.location, ball.physics.location, renderer.white())
     # print the action that the bot is taking
     renderer.draw_string_3d(car.physics.location, 2, 2, action_display, renderer.white())
     renderer.end_rendering()
+
+
+def drawPath(renderer, C1DB):
+    freq = 2
+    inVec = []
+    for i in range(0, int(C1DB.memoryTicks/freq)):
+        index = (C1DB.ticks - i*freq)%C1DB.memoryTicks
+        for r in range(0, 10):
+            R = C1DB.prevPath[index].ro/10 * r
+            phi = C1DB.prevPath[index].phio * (R/C1DB.prevPath[index].ro)**C1DB.prevPath[index].exp + C1DB.myCarPrevRots[index].yaw
+            inVec.append([R*math.cos(phi) + C1DB.myCarPrevLocs[index].x, R*math.sin(phi) + C1DB.myCarPrevLocs[index].y, C1DB.carLoc[C1DB.index].z])
+
+        renderer.begin_rendering()
+        if i == 0:
+            renderer.draw_polyline_3d(inVec, renderer.white())
+        else:
+            renderer.draw_polyline_3d(inVec, renderer.cyan())
+        renderer.end_rendering()
+
