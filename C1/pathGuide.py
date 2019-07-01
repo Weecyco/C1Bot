@@ -25,7 +25,19 @@ def pathFinder(controlState, packet, C1DB, targ):
         phio -= 2*math.pi
     elif phio < -math.pi:
         phio += 2*math.pi
-    exp = 0.3
+
+    phiv = targ.rot.yaw - C1DB.carRot[C1DB.index].yaw
+    if phiv > math.pi:
+        phiv -= 2*math.pi
+    elif phiv < -math.pi:
+        phiv += 2*math.pi
+
+    xRef = ro * math.cos(phio)
+    yRef = ro * math.sin(phio)
+    dyOvdx = math.tan(phiv)
+    exp = (xRef*dyOvdx - yRef) / (phio * xRef + yRef*dyOvdx)
+    if exp < 0.2:
+        exp = 0.2
     phi = phio * (C1DB.carVel[C1DB.index].mag2()*C1DB.deltaTime/ro)**exp
 
 
@@ -80,8 +92,8 @@ def pathFinder(controlState, packet, C1DB, targ):
          controlState.steer *= -1
 
     # outputs
-    if C1DB.debugOut and C1DB.ticks%60 == 0:
-        out = "Ro = " + str(ro) + " PHIo = " + str(phio)
+    if C1DB.debugOut and C1DB.ticks % 40 == 0:  # int(1/C1DB.deltaTime)
+        out = "Ro = " + str(ro) + " PHIo = " + str(phio) + " Exp = " + str(exp)
         print(out)
         out = "phi = " + str(phi) + " From r = " + str(C1DB.carVel[C1DB.index].mag2()*C1DB.pastTime)
         print(out)

@@ -80,38 +80,49 @@ class C1(BaseAgent):
 
         # C1DB.CBvec = ball_location - car_location[self.index]
 
-        if C1DB.debugOut and C1DB.ticks % 60 == 0:
-            print("ball location: ")
-            print(C1DB.ballLoc.x)
-            print("ball speed: ")
-            print(C1DB.ballVel.mag3())
+        # if C1DB.debugOut and C1DB.ticks % 40 == 0:  # int(1/C1DB.deltaTime)
+            # print("ball location: ")
+            # print(C1DB.ballLoc.x)
+            # print("ball speed: ")
+            # print(C1DB.ballVel.mag3())
+            #
+            # print("self index: ")
+            # print(self.index)
+            #
+            # print("number of players: ")
+            # print(len(packet.game_cars))
+            #
+            # print("car 1's pos: ")
+            # print(C1DB.carLoc[1].x)
+            # print(C1DB.carLoc[1].y)
+            # print(C1DB.carLoc[1].z)
+            #
+            # print("car 1's Vel")
+            # print(C1DB.carVel[1].x/60)
+            # print(C1DB.carVel[1].y/60)
+            # print(C1DB.carVel[1].z/60)
+            #
+            # print("car 1's Previous Vel")
+            # print(C1DB.carPrevVel[1].x/60)
+            # print(C1DB.carPrevVel[1].y/60)
+            # print(C1DB.carPrevVel[1].z/60)
+            # print()
+            #
+            # print("car 0's pos: ")
+            # print(C1DB.carLoc[0].x)
+            # print(C1DB.carLoc[0].y)
+            # print(C1DB.carLoc[0].z)
+            # print("car 0's rot: ")
+            # print(C1DB.carRot[0].pitch)
+            # print(C1DB.carRot[0].yaw)
+            # print(C1DB.carRot[0].roll)
+            # print()
+            #
+            # print("delta Time:")
+            # print(C1DB.deltaTime)
+            # print()
 
-            print("self index: ")
-            print(self.index)
 
-            print("number of players: ")
-            print(len(packet.game_cars))
-
-            print("car 1's pos: ")
-            print(C1DB.carLoc[1].x)
-            print(C1DB.carLoc[1].y)
-            print(C1DB.carLoc[1].z)
-            print("end of car 0's xpos")
-
-            print("car 1's Vel")
-            print(C1DB.carVel[1].x/60)
-            print(C1DB.carVel[1].y/60)
-            print(C1DB.carVel[1].z/60)
-            print("car 1's Previous Vel")
-            print(C1DB.carPrevVel[1].x/60)
-            print(C1DB.carPrevVel[1].y/60)
-            print(C1DB.carPrevVel[1].z/60)
-            print("car 1's Loc-Loc difference")
-            print(C1DB.carLoc[1].x - C1DB.carPrevLoc[1].x)
-            print(C1DB.carLoc[1].y - C1DB.carPrevLoc[1].y)
-            print(C1DB.carLoc[1].z - C1DB.carPrevLoc[1].z)
-            print("delta Time:")
-            print(C1DB.deltaTime)
 
         # AI Start
         ball_prediction = self.get_ball_prediction_struct()
@@ -120,9 +131,9 @@ class C1(BaseAgent):
             for i in range(ball_prediction.num_slices - 5, ball_prediction.num_slices):
                 prediction_slice = ball_prediction.slices[i]
                 location = prediction_slice.physics.location
-                if C1DB.debugOut and C1DB.ticks % 600 == 0:
-                    self.logger.info("At time {}, the ball will be at ({}, {}, {})"
-                                     .format(prediction_slice.game_seconds, location.x, location.y, location.z))
+                # if C1DB.debugOut and C1DB.ticks % int(10*1/C1DB.deltaTime) == 0:
+                #     self.logger.info("At time {}, the ball will be at ({}, {}, {})"
+                #                      .format(prediction_slice.game_seconds, location.x, location.y, location.z))
 
 
         # cb_delta_v = ball_velocity - car_velocity[self.index]
@@ -131,9 +142,32 @@ class C1(BaseAgent):
         #         # else:
         #         #     self.controller_state.throttle = math.fabs(C1DB.CBVec.mag2() / 1000.0)
 
-
-
-        pathFinder(self.controller_state, packet, C1DB, Target(C1DB.ballLoc, C1DB.ballVel, 0))
+        if C1DB.debugTrack == 0:
+            pathFinder(self.controller_state, packet, C1DB, Target(C1DB.ballLoc, 2400, Rotator(0, -math.pi/2, 0)))
+        elif C1DB.debugTrack == 1:
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(2180, 3090, 17), 0, Rotator(0, -0.8, 0)))
+            if (C1DB.carLoc[C1DB.index] - Vec3(2180, 3090, 17)).mag3() < C1DB.targetSize:
+                C1DB.debugTrack = 2
+        elif C1DB.debugTrack == 2:
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(0, 0, 17), 1400, Rotator(0, -2.356, 0)))
+            if (C1DB.carLoc[C1DB.index] - Vec3(0, 0, 17)).mag3() < C1DB.targetSize:
+                C1DB.debugTrack = 3
+        elif C1DB.debugTrack == 3:
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(-2180, -3090, 17), 700, Rotator(0, -0.8, 0)))
+            if (C1DB.carLoc[C1DB.index] - Vec3(-2180, -3090, 17)).mag3() < C1DB.targetSize:
+                C1DB.debugTrack = 4
+        elif C1DB.debugTrack == 4:
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(2180, -3090, 17), 1000, Rotator(0, 0.8, 0)))
+            if (C1DB.carLoc[C1DB.index] - Vec3(2180, -3090, 17)).mag3() < C1DB.targetSize:
+                C1DB.debugTrack = 5
+        elif C1DB.debugTrack == 5:
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(0, 0, 17), 2000, Rotator(0, 2.356, 0)))
+            if (C1DB.carLoc[C1DB.index] - Vec3(0, 0, 17)).mag3() < C1DB.targetSize:
+                C1DB.debugTrack = 6
+        elif C1DB.debugTrack == 6:
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(-2180, 3090, 17), 1400, Rotator(0, 0.8, 0)))
+            if (C1DB.carLoc[C1DB.index] - Vec3(-2180, 3090, 17)).mag3() < C1DB.targetSize:
+                C1DB.debugTrack = 1
 
         action_display = "temp"
 
@@ -190,10 +224,10 @@ def drawPath(renderer, C1DB):
     inVec = []
     for i in range(0, int(C1DB.memoryTicks/freq)):
         index = (C1DB.ticks - i*freq)%C1DB.memoryTicks
-        for r in range(0, 10):
-            R = C1DB.prevPath[index].ro/10 * r
+        for r in range(0, 50):
+            R = C1DB.prevPath[index].ro/50 * r
             phi = C1DB.prevPath[index].phio * (R/C1DB.prevPath[index].ro)**C1DB.prevPath[index].exp + C1DB.myCarPrevRots[index].yaw
-            inVec.append([R*math.cos(phi) + C1DB.myCarPrevLocs[index].x, R*math.sin(phi) + C1DB.myCarPrevLocs[index].y, C1DB.carLoc[C1DB.index].z])
+            inVec.append([R*math.cos(phi) + C1DB.myCarPrevLocs[index].x, R*math.sin(phi) + C1DB.myCarPrevLocs[index].y, 17.2])  # C1DB.carLoc[C1DB.index].z
 
         renderer.begin_rendering()
         if i == 0:
