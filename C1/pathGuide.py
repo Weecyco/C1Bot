@@ -1,5 +1,5 @@
 import math
-# from C1Properties import C1Properties, Target
+# from C1Properties import C1Properties
 from VecUtilities import Vec2, Vec3, cross2, dot2, cross3, dot3
 
 
@@ -32,19 +32,36 @@ def pathFinder(controlState, packet, C1DB, targ):
     elif phiv < -math.pi:
         phiv += 2*math.pi
 
-    xRef = ro * math.cos(phio)
-    yRef = ro * math.sin(phio)
-    dyOvdx = math.tan(phiv)
-    exp = (xRef*dyOvdx - yRef) / (phio * xRef + yRef*dyOvdx)
-    if exp < 0.2:
-        exp = 0.2
+    vmino = phiv - phio
+    if vmino > math.pi:
+        vmino -= 2*math.pi
+    elif vmino < -math.pi:
+        vmino += 2*math.pi
+    if abs(vmino) > math.pi/3:
+        exp = 0.85  # add in car repositioner later
+        C1DB.unmathable = 1
+    else:
+        if phiv < phio:
+            phiv = 2*phio - phiv
+        xRef = ro * math.cos(phio)
+        yRef = ro * math.sin(phio)
+        dyOvdx = math.tan(phiv)
+        exp = (xRef*dyOvdx - yRef) / (phio * xRef + yRef*dyOvdx)
+        if exp < 0:
+            C1DB.unmathable = 2
+            exp = 0.85
+        elif exp < 0.4:
+            exp = 0.4
+            C1DB.unmathable = 0
+        else:
+            C1DB.unmathable = 0
+
     phi = phio * (C1DB.carVel[C1DB.index].mag2()*C1DB.deltaTime/ro)**exp
 
 
     phiOld = 0.0000001
     # controls steering based on angle required
     if C1DB.prevInput is not None and C1DB.prevInput.steer != 0:
-
         phiOld = C1DB.myCarPrevRots[C1DB.ticks%C1DB.memoryTicks].yaw - C1DB.myCarPrevRots[(C1DB.ticks - 1)%C1DB.memoryTicks].yaw
         if phiOld > math.pi:
             phiOld -= 2 * math.pi
@@ -111,8 +128,8 @@ def pathFinder(controlState, packet, C1DB, targ):
         print(out)
 
         print()
-        # out = "yaw: " + str(C1DB.carRot[0].yaw) + " my angle: " + str(C1DB.carVel[0].angle_xy())
-        # print(out)
+        out = "yaw: " + str(C1DB.carRot[0].yaw) + " my angle: " + str(C1DB.carVel[0].angle_xy())
+        print(out)
 
 
     C1DB.prevPath[C1DB.ticks%C1DB.memoryTicks] = PathData(ro, phio, exp)
@@ -124,3 +141,9 @@ class PathData:
         self.phio = phio
         self.exp = exp
 
+class Target:
+    def __init__(self, loc = 0, speed = 0, rot = 0, ignoreRot = 0):
+        self.loc = loc
+        self.speed = speed
+        self.rot = rot
+        self.ignoreRot = ignoreRot

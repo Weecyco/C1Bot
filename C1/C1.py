@@ -36,7 +36,6 @@ class C1(BaseAgent):
                 C1DB.carRot.append(Rotator(0, 0, 0))
                 C1DB.carAVel.append(Vec3(0, 0, 0))
                 C1DB.carPrevVel.append(Vec3(0, 0, 0))
-                C1DB.carPrevLoc.append(Vec3(0, 0, 0))
         else:
             C1DB.deltaTime = time.perf_counter() - C1DB.pastTime
             if C1DB.deltaTime < 0:
@@ -80,51 +79,53 @@ class C1(BaseAgent):
 
         # C1DB.CBvec = ball_location - car_location[self.index]
 
-        # if C1DB.debugOut and C1DB.ticks % 40 == 0:  # int(1/C1DB.deltaTime)
-            # print("ball location: ")
-            # print(C1DB.ballLoc.x)
-            # print("ball speed: ")
-            # print(C1DB.ballVel.mag3())
-            #
-            # print("self index: ")
-            # print(self.index)
-            #
-            # print("number of players: ")
-            # print(len(packet.game_cars))
-            #
-            # print("car 1's pos: ")
-            # print(C1DB.carLoc[1].x)
-            # print(C1DB.carLoc[1].y)
-            # print(C1DB.carLoc[1].z)
-            #
-            # print("car 1's Vel")
-            # print(C1DB.carVel[1].x/60)
-            # print(C1DB.carVel[1].y/60)
-            # print(C1DB.carVel[1].z/60)
-            #
-            # print("car 1's Previous Vel")
-            # print(C1DB.carPrevVel[1].x/60)
-            # print(C1DB.carPrevVel[1].y/60)
-            # print(C1DB.carPrevVel[1].z/60)
-            # print()
-            #
-            # print("car 0's pos: ")
-            # print(C1DB.carLoc[0].x)
-            # print(C1DB.carLoc[0].y)
-            # print(C1DB.carLoc[0].z)
-            # print("car 0's rot: ")
-            # print(C1DB.carRot[0].pitch)
-            # print(C1DB.carRot[0].yaw)
-            # print(C1DB.carRot[0].roll)
-            # print()
-            #
-            # print("delta Time:")
-            # print(C1DB.deltaTime)
-            # print()
+
+        #State outputs
+        if C1DB.debugOut and C1DB.ticks % 40 == 0:  # int(1/C1DB.deltaTime)
+            print("ball location: ")
+            print(C1DB.ballLoc.x)
+            print("ball speed: ")
+            print(C1DB.ballVel.mag3())
+
+            print("self index: ")
+            print(self.index)
+
+            print("number of players: ")
+            print(len(packet.game_cars))
+
+            print("car 1's pos: ")
+            print(C1DB.carLoc[1].x)
+            print(C1DB.carLoc[1].y)
+            print(C1DB.carLoc[1].z)
+
+            print("car 1's Vel")
+            print(C1DB.carVel[1].x/60)
+            print(C1DB.carVel[1].y/60)
+            print(C1DB.carVel[1].z/60)
+
+            print("car 1's Previous Vel")
+            print(C1DB.carPrevVel[1].x/60)
+            print(C1DB.carPrevVel[1].y/60)
+            print(C1DB.carPrevVel[1].z/60)
+            print()
+
+            print("car 0's pos: ")
+            print(C1DB.carLoc[0].x)
+            print(C1DB.carLoc[0].y)
+            print(C1DB.carLoc[0].z)
+            print("car 0's rot: ")
+            print(C1DB.carRot[0].pitch)
+            print(C1DB.carRot[0].yaw)
+            print(C1DB.carRot[0].roll)
+            print()
+
+            print("delta Time:")
+            print(C1DB.deltaTime)
+            print()
 
 
 
-        # AI Start
+        # --- AI Start ---
         ball_prediction = self.get_ball_prediction_struct()
 
         if ball_prediction is not None:
@@ -136,58 +137,101 @@ class C1(BaseAgent):
                 #                      .format(prediction_slice.game_seconds, location.x, location.y, location.z))
 
 
-        # cb_delta_v = ball_velocity - car_velocity[self.index]
-        # if C1DB.CBVec.mag2() > 500.0:
-        #         #     self.controller_state.throttle = 1.0
-        #         # else:
-        #         #     self.controller_state.throttle = math.fabs(C1DB.CBVec.mag2() / 1000.0)
-
+        #debugTracks:
         if C1DB.debugTrack == 0:
-            pathFinder(self.controller_state, packet, C1DB, Target(C1DB.ballLoc, 2400, Rotator(0, -math.pi/2, 0)))
+            pathFinder(self.controller_state, packet, C1DB, Target(C1DB.ballLoc, 2400, Rotator(0, -math.pi/2, 0), 0))
         elif C1DB.debugTrack == 1:
-            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(2180, 3090, 17), 0, Rotator(0, -0.8, 0)))
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(2180, 3090, 17), 0, Rotator(0, -0.8, 0), 0))
             if (C1DB.carLoc[C1DB.index] - Vec3(2180, 3090, 17)).mag3() < C1DB.targetSize:
                 C1DB.debugTrack = 2
         elif C1DB.debugTrack == 2:
-            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(0, 0, 17), 1400, Rotator(0, -2.356, 0)))
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(0, 0, 17), 1400, Rotator(0, -2.356, 0), 0))
             if (C1DB.carLoc[C1DB.index] - Vec3(0, 0, 17)).mag3() < C1DB.targetSize:
                 C1DB.debugTrack = 3
         elif C1DB.debugTrack == 3:
-            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(-2180, -3090, 17), 700, Rotator(0, -0.8, 0)))
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(-2180, -3090, 17), 700, Rotator(0, -0.8, 0), 0))
             if (C1DB.carLoc[C1DB.index] - Vec3(-2180, -3090, 17)).mag3() < C1DB.targetSize:
                 C1DB.debugTrack = 4
         elif C1DB.debugTrack == 4:
-            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(2180, -3090, 17), 1000, Rotator(0, 0.8, 0)))
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(2180, -3090, 17), 1000, Rotator(0, 0.8, 0), 0))
             if (C1DB.carLoc[C1DB.index] - Vec3(2180, -3090, 17)).mag3() < C1DB.targetSize:
                 C1DB.debugTrack = 5
         elif C1DB.debugTrack == 5:
-            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(0, 0, 17), 2000, Rotator(0, 2.356, 0)))
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(0, 0, 17), 2000, Rotator(0, 2.356, 0), 0))
             if (C1DB.carLoc[C1DB.index] - Vec3(0, 0, 17)).mag3() < C1DB.targetSize:
                 C1DB.debugTrack = 6
         elif C1DB.debugTrack == 6:
-            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(-2180, 3090, 17), 1400, Rotator(0, 0.8, 0)))
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(-2180, 3090, 17), 1400, Rotator(0, 0.8, 0), 0))
             if (C1DB.carLoc[C1DB.index] - Vec3(-2180, 3090, 17)).mag3() < C1DB.targetSize:
                 C1DB.debugTrack = 1
+        if C1DB.ticks%6000 < 3000:
+            targetVel = C1DB.ticks%3000
+        else:
+            targetVel = 0
+        if C1DB.debugTrack == 7:
+            if packet.game_cars[0].double_jumped == 1:
+                C1DB.debugTrack = 8
+            else:
+                #controller:
+                self.controller_state.steer = 0.8
+
+                self.controller_state.throttle = 1
+                if C1DB.carVel[C1DB.index].mag2() > targetVel:
+                    self.controller_state.throttle = 0
+                    self.controller_state.boost = 0
+                elif C1DB.carVel[C1DB.index].mag2() > 1220:
+                    self.controller_state.boost = 1
+
+                #analysis:
+                if packet.game_cars[self.index].physics.location.z < 25:
+                    out = str(C1DB.carVel[C1DB.index].mag2())
+                    denominator = (C1DB.carVel[self.index].x*(C1DB.myCarPrevVels[C1DB.ticks%C1DB.memoryTicks].y - C1DB.myCarPrevVels[(C1DB.ticks-1)%C1DB.memoryTicks].y)/C1DB.deltaTime - C1DB.carVel[self.index].y*(C1DB.myCarPrevVels[C1DB.ticks%C1DB.memoryTicks].x - C1DB.myCarPrevVels[(C1DB.ticks-1)%C1DB.memoryTicks].x)/C1DB.deltaTime)
+                    if(denominator != 0):
+                        out = out + "    " + str((C1DB.carVel[self.index].x**2 + C1DB.carVel[self.index].y**2)**(3/2)/ denominator)
+                    else:
+                        out = out + "    inf"
+                    # print("car to car: " + str((C1DB.carLoc[0] - C1DB.carLoc[1]).mag2()))
+                    out = out + "    " + str(targetVel) + "    " + str(C1DB.deltaTime) + "\n"
+                    print(out)
+                    debugOut = open("debug.txt", "a+")
+                    debugOut.write(out)
+                    debugOut.close()
+                else:
+                    print("too high")
+        elif C1DB.debugTrack == 8:
+            if packet.game_cars[0].double_jumped == 0:
+                C1DB.debugTrack = 9
+        elif C1DB.debugTrack == 9:
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(0, 0, 0), targetVel, Rotator(0, 0, 0), 1))
+            if (C1DB.carLoc[C1DB.index] - Vec3(0, 0, 0)).mag3() < C1DB.targetSize:
+                C1DB.testTicks = 0
+                C1DB.debugTrack = 7
+
+
 
         action_display = "temp"
-
-        # self.controller_state.throttle = throttle
-        # self.controller_state.steer = turn
-        # if C1DB.ticks%5 == 0:
-        if C1DB.debugVisual:
-            drawPath(self.renderer, C1DB)
+        #draws ground path if available
+        if C1DB.debugVisual == 1:
+            drawPolarPath(self.renderer, C1DB)
+        elif C1DB.debugVisual == 2:
+            drawCirclePath(self.renderer, C1DB)
 
         # draw_debug(self.renderer, packet.game_cars[self.index], packet.game_ball, action_display)
 
+        # --- Tick end data management ---
         # updates time
         C1DB.ticks += 1
         if C1DB.ticks == 1000000:
             C1DB.ticks = 0
 
+        #update path tester
+        if C1DB.ticks%100 == 99:
+            C1DB.testTicks += 1
+
+
         # updates data base
         for i in range(0, len(C1DB.carVel)):
             C1DB.carPrevVel[i] = copy.copy(C1DB.carVel[i])
-            C1DB.carPrevLoc[i] = copy.copy(C1DB.carLoc[i])
         C1DB.ballPrevVel = copy.copy(C1DB.ballVel)
         C1DB.prevInput = SimpleControllerState(self.controller_state.steer,
                                                self.controller_state.throttle,
@@ -219,9 +263,16 @@ def draw_debug(renderer, car, ball, action_display):
     renderer.end_rendering()
 
 
-def drawPath(renderer, C1DB):
+def drawPolarPath(renderer, C1DB):
     freq = 2
     inVec = []
+    renderer.begin_rendering()
+
+    if C1DB.unmathable == 1:
+        renderer.draw_string_3d([C1DB.carLoc[C1DB.index].x, C1DB.carLoc[C1DB.index].y, C1DB.carLoc[C1DB.index].z], 2, 2, "unmathable", renderer.white())
+    elif C1DB.unmathable == 2:
+        renderer.draw_string_3d([C1DB.carLoc[C1DB.index].x, C1DB.carLoc[C1DB.index].y, C1DB.carLoc[C1DB.index].z], 2, 2, "Very unmathable", renderer.white())
+
     for i in range(0, int(C1DB.memoryTicks/freq)):
         index = (C1DB.ticks - i*freq)%C1DB.memoryTicks
         for r in range(0, 50):
@@ -229,10 +280,14 @@ def drawPath(renderer, C1DB):
             phi = C1DB.prevPath[index].phio * (R/C1DB.prevPath[index].ro)**C1DB.prevPath[index].exp + C1DB.myCarPrevRots[index].yaw
             inVec.append([R*math.cos(phi) + C1DB.myCarPrevLocs[index].x, R*math.sin(phi) + C1DB.myCarPrevLocs[index].y, 17.2])  # C1DB.carLoc[C1DB.index].z
 
-        renderer.begin_rendering()
         if i == 0:
             renderer.draw_polyline_3d(inVec, renderer.white())
         else:
             renderer.draw_polyline_3d(inVec, renderer.cyan())
-        renderer.end_rendering()
 
+    renderer.end_rendering()
+
+
+def drawCirclePath(renderer, C1DB):
+    renderer
+    C1DB
