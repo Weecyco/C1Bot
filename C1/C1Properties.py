@@ -7,7 +7,7 @@ class C1Properties:
     def __init__(self):
         self.debugVisual = 1
         self.debugOut = 0
-        self.debugTrack = 9
+        self.debugTrack = 7
         self.targetSize = 40
         self.unmathable = 0
         self.testTicks = 0

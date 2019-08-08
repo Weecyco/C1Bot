@@ -36,10 +36,11 @@ class C1(BaseAgent):
                 C1DB.carRot.append(Rotator(0, 0, 0))
                 C1DB.carAVel.append(Vec3(0, 0, 0))
                 C1DB.carPrevVel.append(Vec3(0, 0, 0))
-        else:
-            C1DB.deltaTime = time.perf_counter() - C1DB.pastTime
-            if C1DB.deltaTime < 0:
-                C1DB.deltaTime += 1
+        #reimplement for lag compensation
+        # else:
+        #     C1DB.deltaTime = time.perf_counter() - C1DB.pastTime
+        #     if C1DB.deltaTime < 0:
+        #         C1DB.deltaTime += 1
         C1DB.pastTime = time.perf_counter()
         C1DB.ballLoc.covtVecFrom(packet.game_ball.physics.location)
         C1DB.ballVel.covtVecFrom(packet.game_ball.physics.velocity)
@@ -164,22 +165,23 @@ class C1(BaseAgent):
             pathFinder(self.controller_state, packet, C1DB, Target(Vec3(-2180, 3090, 17), 1400, Rotator(0, 0.8, 0), 0))
             if (C1DB.carLoc[C1DB.index] - Vec3(-2180, 3090, 17)).mag3() < C1DB.targetSize:
                 C1DB.debugTrack = 1
-        if C1DB.ticks%6000 < 3000:
-            targetVel = C1DB.ticks%3000
-        else:
-            targetVel = 0
+
         if C1DB.debugTrack == 7:
             if packet.game_cars[0].double_jumped == 1:
                 C1DB.debugTrack = 8
             else:
                 #controller:
                 self.controller_state.steer = 0.8
-
+                # if C1DB.ticks % 3000 < 2350:
+                #     targetVel = C1DB.ticks % 3000
+                # else:
+                #     targetVel = 0
+                targetVel = 2300
                 self.controller_state.throttle = 1
                 if C1DB.carVel[C1DB.index].mag2() > targetVel:
                     self.controller_state.throttle = 0
                     self.controller_state.boost = 0
-                elif C1DB.carVel[C1DB.index].mag2() > 1220:
+                elif C1DB.carVel[C1DB.index].mag2() > 0:  # 1220
                     self.controller_state.boost = 1
 
                 #analysis:
@@ -202,7 +204,7 @@ class C1(BaseAgent):
             if packet.game_cars[0].double_jumped == 0:
                 C1DB.debugTrack = 9
         elif C1DB.debugTrack == 9:
-            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(0, 0, 0), targetVel, Rotator(0, 0, 0), 1))
+            pathFinder(self.controller_state, packet, C1DB, Target(Vec3(0, 0, 0), 0, Rotator(0, 0, 0), 1))
             if (C1DB.carLoc[C1DB.index] - Vec3(0, 0, 0)).mag3() < C1DB.targetSize:
                 C1DB.testTicks = 0
                 C1DB.debugTrack = 7
